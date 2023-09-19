@@ -5,29 +5,32 @@ from bs4 import BeautifulSoup
 
 class Weather:
 
-    # Search Query
-    searchQuery = "https://www.accuweather.com/en/search-locations?query="
+    
+    
+
+    def __init__(self):
+        # Search Query
+        self.searchQuery = "https://www.accuweather.com/en/search-locations?query="
 
 
-    selectedApiUrl = None
+        self.selectedApiUrl = None
 
-    # Weather Code Check Status
-    weatherCodeStatus = False
+        # Weather Code Check Status
+        self.weatherCodeStatus = False
 
-    # Bs4 Object
-    _bsSoup = None
+        # Bs4 Object
+        self._bsSoup = None
 
-    # Weather Dict
-    weatherList = {}
+        # Weather Dict
+        self.weatherList = {}
 
-    # Config header
-    HEADERS = {
-            'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
-                        'AppleWebKit/537.36 (KHTML, like Gecko)'
-                        'Chrome/116.0.0.0 Safari/537.36'),
-            'Accept-Language': 'en-US, en;q=0.5'
-    }
-        
+        # Config header
+        self.HEADERS = {
+                'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+                            'AppleWebKit/537.36 (KHTML, like Gecko)'
+                            'Chrome/116.0.0.0 Safari/537.36'),
+                'Accept-Language': 'en-US, en;q=0.5'
+        }
 
 
     def SearchLocation(self ,location):
@@ -47,10 +50,11 @@ class Weather:
 
             elif (weahtherCode.status_code == 200):
                 print("Status : OK !")
-                self._GetWeatherCode(data=weahtherCode.content)
+                self._get_weather_code(data=weahtherCode.content)
 
-        except RequestException:
+        except RequestException as reqExp:
             print("Error, url not working or not founded !")
+            print(reqExp.strerror)
 
 
     def checkLocationExists(self,data):
@@ -66,7 +70,7 @@ class Weather:
             else:
                 return True
 
-    def _GetWeatherCode(self,data):
+    def _get_weather_code(self,data):
         
         try:
             # Bs4 Initlaize 
@@ -117,7 +121,7 @@ class Weather:
 
         except Exception as error:
             print("Error, weather code's not collected or url is broken !! check url or user-agent !")
-            print(error.with_traceback())
+            print(error)
 
     def SelectLocation(self):
         locationId = None
@@ -132,7 +136,8 @@ class Weather:
             # Choice User Input
             inputLocation = input("Select Location : ")
 
-            print(f"{len(self.weatherList)} - {inputLocation}")
+            #
+            # print(f"{len(self.weatherList)} - {inputLocation}")
 
             
 
@@ -151,7 +156,8 @@ class Weather:
         
 
     def CollectData(self, id):
-        
+
+
         # Check Page Status
         pageStatus = False
     
@@ -167,9 +173,59 @@ class Weather:
         
 
         if pageStatus:
-            soup = BeautifulSoup(getWeather.content, "html.parser")
+            try:
+                # Parse weather page
+                soup = BeautifulSoup(getWeather.content, "html.parser")
 
-            print(getWeather.text)
+          
+
+                cardContent = soup.find_all(
+                    'div', attrs={
+                        'class':'card-content'
+                    }
+                )
+
+                for card in cardContent:
+                    
+                    temp  = card.find('div', attrs={
+                        'class':'temp'
+                    })
+
+                    tempData = temp.text.split('\n')
+
+
+                    for data in tempData:
+                        splitData = data.split('°')
+
+                        degree = splitData[0]
+                        status = splitData[1]
+
+                        print(degree + "°", status)
+
+                    
+                    
+                   
+
+
+
+            except AttributeError:
+                print("Text is not available !")
+            except Exception as errorEx:
+                print("Error, datas not fetched or not found !")
+                errorDetails = f"""
+                Error Traceback :\n\t{errorEx.with_traceback()}\n\t
+                """
+
+                print(errorDetails)
+            
+
+            
+          
+
+            
+
+            
+           
 
             
 
@@ -177,4 +233,4 @@ class Weather:
 
 
 app = Weather()
-app.SearchLocation(location="Rotterdam")
+app.SearchLocation(location="Amsterdam")
