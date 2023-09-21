@@ -24,3 +24,5 @@ python weather.py
 ## Screenshots
 
 ![App Screenshot](img/menu.png)
+![App Screenshot](img/locations.png)
+![App Screenshot](img/result.png)
