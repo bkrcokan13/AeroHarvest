@@ -1,4 +1,4 @@
-import random, time, requests
+import requests
 from requests import RequestException
 from bs4 import BeautifulSoup
 
