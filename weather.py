@@ -19,6 +19,12 @@ class Weather:
         # Weather Dict
         self.weatherList = {}
 
+        # Weather List's
+        self.date = []
+        self.pharseDate = []
+        self.tempsList = []
+        self.panelList = []
+
         # Config header
         self.HEADERS = {
             'User-Agent': ('Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
@@ -27,24 +33,52 @@ class Weather:
             'Accept-Language': 'en-US, en;q=0.5'
         }
 
+    def UserUI(self):
+        menuTemplate = """               
+            .d8b.  d88888b d8888b.  .d88b.  db   db  .d8b.  d8888b. db    db d88888b .d8888. d888888b 
+            d8' `8b 88'     88  `8D .8P  Y8. 88   88 d8' `8b 88  `8D 88    88 88'     88'  YP `~~88~~' 
+            88ooo88 88ooooo 88oobY' 88    88 88ooo88 88ooo88 88oobY' Y8    8P 88ooooo `8bo.      88    
+            88~~~88 88~~~~~ 88`8b   88    88 88~~~88 88~~~88 88`8b   `8b  d8' 88~~~~~   `Y8b.    88    
+            88   88 88.     88 `88. `8b  d8' 88   88 88   88 88 `88.  `8bd8'  88.     db   8D    88    
+            YP   YP Y88888P 88   YD  `Y88P'  YP   YP YP   YP 88   YD    YP    Y88888P `8888Y'    YP
+            
+            
+            --------------------------------------------------------------------------------------- 
+               
+        """
+
+        while True:
+            print(menuTemplate)
+
+            locationName = input("Location: ")
+
+            if locationName is None:
+                input("Please do not enter empty text, press the any key !")
+            elif locationName.isdigit():
+                input("Please do not enter digit text, press the any key !")
+            elif locationName.isalpha() is False:
+                input("Please only enter text, press the any key !")
+            else:
+                self.SearchLocation(location=locationName.lower())
+
     def SearchLocation(self, location):
         try:
 
             print(self.searchQuery + location)
 
-            weahtherCode = requests.get(
+            weatherCode = requests.get(
                 url=f"{self.searchQuery + location}",
                 headers=self.HEADERS,
                 timeout=3
             )
 
             # Check status code
-            if weahtherCode.status_code == 403:
+            if weatherCode.status_code == 403:
                 print("Status : Forbidden, check your agent or change another agent !.")
 
-            elif weahtherCode.status_code == 200:
+            elif weatherCode.status_code == 200:
                 print("Status : OK !")
-                self._get_weather_code(data=weahtherCode.content)
+                self._get_weather_code(data=weatherCode.content)
 
         except RequestException as reqExp:
             print("Error, url not working or not founded !")
@@ -90,7 +124,7 @@ class Weather:
                     for code in weatherCode:
                         # Clear whitespace
                         textLocation = code.text.replace(" ", " ").replace("\n", " ").replace("\t", "")
-                        url = ("https://www.accuweather.com/" + code.get('href'))
+                        url = ("https://www.accuweather.com" + code.get('href'))
 
                         # Add count
                         count += 1
@@ -142,6 +176,8 @@ class Weather:
 
     def CollectData(self, id):
 
+        global getDailyUrl
+
         # Check Page Status
         pageStatus = False
 
@@ -150,75 +186,117 @@ class Weather:
 
         # Check Status Code
         if getWeather.status_code == 200:
+            # Get daily weather url
+            weatherSoup = BeautifulSoup(getWeather.content, 'html.parser')
+
+            getDailyUrl = weatherSoup.find('a', attrs={
+                'data-pageid': 'daily'
+            }).get("href")
+
+            # Complete Url
+            getDailyUrl = 'https://www.accuweather.com' + getDailyUrl
+
             pageStatus = True
         elif getWeather.status_code == 403:
             print("403 Forbidden, check headers !")
 
         if pageStatus:
             try:
-                # Parse weather page
-                soup = BeautifulSoup(getWeather.content, "html.parser")
 
-                tempList, phraseList = [], []
+                dailyData = requests.get(getDailyUrl, headers=self.HEADERS)
 
-                tempList.clear()
-                phraseList.clear()
+                if dailyData.status_code == 200:
 
-                cardContent = soup.find_all(
-                    'div', attrs={
-                        'class': 'card-content'
-                    }
-                )
+                    dailySoup = BeautifulSoup(dailyData.content, 'html.parser')
 
-                for card in cardContent:
-                    tempData = card.find('div', attrs={
-                        'class': 'temp'
-                    })
+                    # Wrapper Panel
+                    wrapper = dailySoup.find_all(
+                        'div', attrs={
+                            'class': 'daily-wrapper'
+                        }
+                    )
 
-                    phrase = card.find('div', attrs={
-                        'class': 'phrase'
-                    })
+                    # Clear ALl List's
+                    self.date.clear()
+                    self.pharseDate.clear()
+                    self.tempsList.clear()
+                    self.panelList.clear()
 
-                    tempList.append(tempData.text)
-                    phraseList.append(phrase.text)
+                    # Wrapper Data's Extract
+                    for wrap in wrapper:
 
-                zip_weather_data = zip(tempList, phraseList)
+                        # Date
+                        dowDate = wrap.find('span', attrs={
+                            'class': 'module-header dow date'
+                        }).text
 
-                weather_data = list(zip_weather_data)
+                        subDate = wrap.find(
+                            'span', attrs={
+                                'class': 'module-header sub date'
+                            }
+                        ).text
 
-                for hdr in range((len(self.weatherList[id]['location']) * 2)):
-                    print('*', end="")
-                print("\n")
-                print(f"(Selected Location {self.weatherList[id]['location'].upper()})\n")
-                print("\n")
+                        self.date.append(f"(Month:{subDate}-{dowDate})")
 
-                for dt in weather_data:
-                    print(f"{dt[0].upper()}  -  {dt[1].upper()}")
+                        # Phrase
+                        pharse = wrap.find(
+                            'div', attrs={
+                                'class': 'phrase'
+                            }
+                        ).text
 
-                print("\n")
-                for hdr in range((len(self.weatherList[id]['location']) * 2)):
-                    print('*', end="")
+                        self.pharseDate.append(pharse)
 
-                # for card in cardContent:
+                        # Temps
+                        temps = wrap.find_all(
+                            'div', attrs={
+                                'class': 'temp'
+                            }
+                        )
+                        for temp in temps:
+                            high = temp.find(
+                                'span', attrs={
+                                    'class': 'high'
+                                }
+                            ).text
 
-                #     temp  = card.find('div', attrs={
-                #         'class':'temp'
-                #     })
+                            low = temp.find(
+                                'span', attrs={
+                                    'class': 'low'
+                                }
+                            ).text
 
-                #     tempData = temp.text.split('\n')
+                            # Clear ('/') and replace empty string
+                            low = low.replace('/', "")
 
-                #     for data in tempData:
-                #         # splitData = data.split('°')
+                            self.tempsList.append(f"{low}/{high}")
 
-                #         # degree = splitData[0]
-                #         # status = splitData[1]
+                        # Panels
+                        panels = wrap.find(
+                            'div', attrs={
+                                'class': 'panels'
+                            }
+                        ).text
 
-                #         # print(degree + "°", status)
+                        panels = panels.replace("\n", " ").replace("\t", "-")
+                        self.panelList.append(panels)
 
-                #         tempList.append(data)
-                # print(tempList)
+                    weather_list_zip = zip(self.date, self.pharseDate, self.tempsList, self.panelList)
+                    weatherData = list(weather_list_zip)
 
+                    for weather in weatherData:
+                        template = f"""
+                               |----> {self.weatherList[id]["location"].strip().upper()} {weather[0]}
+                               |----------------------------------------------------------------------------------------|                                                                
+                               |    -> Temp:   {weather[1]}                                                               
+                               |    -> Status: {weather[2]}                                                              
+                               |    -> Detail: {weather[3]}                                                              
+                               |----------------------------------------------------------------------------------------|
+                               """
+                        print(template, end="", sep="\n")
 
+                elif dailyData.status_code == 403:
+                    print("Daily Weather Page : 403 Forbidden ! ")
 
             except AttributeError:
                 print("Text is not available !")
@@ -227,9 +305,8 @@ class Weather:
                 errorDetails = f"""
                 Error Traceback :\n\t{errorEx.with_traceback()}\n\t
                 """
-
                 print(errorDetails)
 
 
 app = Weather()
-app.SearchLocation(location="Amsterdam")
+app.UserUI()
