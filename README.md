@@ -23,6 +23,6 @@ python weather.py
 
 ## Screenshots
 
-![App Screenshot](img/menu.png)
-![App Screenshot](img/locations.png)
-![App Screenshot](img/result.png)
+![Alt text](img/menu.png "1-Menu")
+![Alt text](img/locations.png "2-Location Menu")
+![Alt text](img/result.png "3-Result")
