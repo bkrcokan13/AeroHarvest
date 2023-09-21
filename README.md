@@ -1,7 +1,7 @@
 ![Logo](img/logo.png)
 
 # AeroHarvest
- AeroHarvest is a web crawler project designed to collect and provide weather data.
+ AeroHarvest is a web crawler project designed to collect and provide weather data. Accuweather.com is used as a weather website, it is not used for commercial purposes and the data is not transferred anywhere.
 
 
 ## Installation
